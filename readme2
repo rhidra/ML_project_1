@@ -1,0 +1,100 @@
+background : 0, 0, 0
+border: 224, 224, 192
+
+aeroplane : 128, 0, 0
+bicycle : 0, 128, 0
+bird: 128, 128, 0
+boat : 0, 0, 128
+bottle : 128, 0, 128
+bus : 0, 128, 128
+car : 128, 128, 128
+cat : 64, 0, 0
+chair : 192, 0, 0
+cow : 64, 128, 0
+dinningtable : 192, 128, 0
+dog : 64, 0, 128
+horse : 192, 0, 128
+motorbike : 64, 128, 128
+person : 192, 128, 128
+pottedplant : 0, 64, 0
+sheep : 128, 64, 0
+sofa : 0, 192, 0
+train : 128, 192, 0
+tvmonitor : 0, 64, 128
+
+
+ResNet :
+remove stage 4 and 5
+input -> activation_71
+
+
+Experiences:
+
+[ ] Comparaison de loss fonctions ? de learning rate ? Comparaison d'optimizateur
+[X] Influence des weights, analyse de l'imbalanced data
+[X] Comparaison avec et sans concatenation dans le model
+[X] Visualisation au bout de l'encoder puis progressivement en montant, par t-SNE
+
+
+Training :
+
+Bad results :
+- Adam, wrong image loading
+- SGD, lr=0.0001, momentum=.9, weight_bg=.01, custom CCE loss
+
+Good results :
+- Wrong image loading, SGD, lr=0.0001, momentum=.9, custom CCE loss bg=.1
+  name: 2020_06_08-16_50_40
+  train accuracy: 66.88%
+  loss: .8744
+
+- SGD, lr=0.0001, momentum=.9, keras CCE loss
+  name: 2020_06_08-18_15_15
+  train accuracy: 60.51%
+  loss: .8246
+
+- SGD, lr=0.0001, momentum=.9, keras CCE loss, batch_size=32, epochs=582, steps=5
+  name: 2020_06_09-08_00_47
+  train accuracy: 76.92%
+  loss: .9883
+
+  Même setup que Claire. Mais avec la loss de keras il n'y a pas de poids sur les
+  classes. Il passe sur tout le dataset 1 fois.
+
+  Meilleur résultat jusqu'à maintenant. Il reconnait bien les humains. Il a du mal
+  sur les angles bizarres, ce qui est sans doute la faute du ResNet pré entrainé.
+  Il classifie généralement des grandes masses en humains. Puis certains pixels
+  outliers sont classifiés en tant qu'autre chose.
+
+- SGD, lr=0.0001, momentum=.9, custom CCE weighted (bg=.1) loss, batch_size=32, epochs=582, steps=5
+  name: 2020_06_09-09_55_28
+  train accuracy: 68.96% (Mais l'accuracy n'est pas weighted !)
+  loss: .5846
+
+  Même setup que le précédent, mais avec une loss weighted. La loss est custom,
+  donc elle a peut-être des bugs. On parcours tout le dataset 1 fois. On reprend
+  le modèle précédent comme base.
+
+  Bien meilleurs résultats. Les autres classes apparaissent enfin dans le masque
+  prédit. Il arrive à discerner les formes globales, de temps en temps la classe
+  est correcte. Beaucoup de bruit. Il faudrait post process avec un algo de
+  smoothing pour retirer les pixels parasites.
+
+- SGD, lr=0.0001, momentum=.9, custom CCE weighted (bg=.01) loss, batch_size=32, epochs=582, steps=5
+  name: 2020_06_09-11_39_31
+  train accuracy: 39.6% (Mais l'accuracy n'est pas weighted !)
+  loss: .5071
+
+  Même que précédent mais on diminue encore le poids du background.
+  Tout est le dataset n'est parcouru qu'une fois.
+
+  Trop de choses sont catégorisées en tant que classe, plutôt que background.
+  La valeur du bg weight est sans doute trop élevée.
+
+- SGD, lr=0.0001, momentum=.9, custom CCE weighted (weights relative to quantity) loss, batch_size=32, epochs=582, steps=5
+  name: 2020_06_09-13_50_16
+  train accuracy: % (Mais l'accuracy n'est pas weighted !)
+  loss:
+
+  Même que précédent mais cette fois les poids sont répartis en fonction de la
+  proportion de chaque classe dans le dataset.
